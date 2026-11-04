@@ -49,7 +49,7 @@
       </div>
       <div>
         <h1 class="font-bold text-base tracking-wide leading-none text-white">Gemini Live Demo</h1>
-        <p class="text-xs text-gray-400 mt-1">Modelo: <span class="text-geminiBlue font-mono">gemini-3.8-flash</span></p>
+        <p class="text-xs text-gray-400 mt-1">Multi-model Fallback: <span class="text-geminiBlue font-mono">Auto (3.8 / 2.0 / 1.5)</span></p>
       </div>
     </div>
 
@@ -240,34 +240,60 @@
 
       const loadingId = appendLoading();
 
-      try {
-        // ENDPOINT ATUALIZADO: usa gemini-3.8-flash
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{ text: message }]
-            }]
-          })
-        });
+      // Lista de modelos em ordem de prioridade para Fallback automático
+      const models = [
+        'gemini-3.8-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash'
+      ];
 
-        const data = await response.json();
-        removeLoading(loadingId);
+      let success = false;
 
-        if (data.error) {
-          appendMessage('system', `Erro da API (${data.error.code}): ${data.error.message}`);
-        } else if (data.candidates && data.candidates[0].content.parts[0].text) {
-          const reply = data.candidates[0].content.parts[0].text;
-          appendMessage('bot', reply);
-        } else {
-          appendMessage('system', 'Não foi possível obter uma resposta válida do modelo.');
+      for (const model of models) {
+        try {
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{ text: message }]
+              }]
+            })
+          });
+
+          const data = await response.json();
+
+          // Se o servidor retornar 503 (alta demanda) ou 429 (limite de requisições), tenta o próximo modelo
+          if (response.status === 503 || response.status === 429 || (data.error && (data.error.code === 503 || data.error.code === 429))) {
+            console.warn(`Modelo ${model} indisponível (Erro ${response.status}). Alternando para o próximo modelo...`);
+            continue;
+          }
+
+          removeLoading(loadingId);
+
+          if (data.error) {
+            appendMessage('system', `Erro da API (${data.error.code}): ${data.error.message}`);
+          } else if (data.candidates && data.candidates[0].content.parts[0].text) {
+            const reply = data.candidates[0].content.parts[0].text;
+            appendMessage('bot', reply);
+          } else {
+            appendMessage('system', 'Não foi possível obter uma resposta válida do modelo.');
+          }
+
+          success = true;
+          break; // Sucesso, sai do loop de fallback
+
+        } catch (err) {
+          console.error(`Falha de conexão com o modelo ${model}:`, err);
         }
-      } catch (err) {
+      }
+
+      // Caso todos os modelos da lista falhem
+      if (!success) {
         removeLoading(loadingId);
-        appendMessage('system', `Erro de conexão: ${err.message}`);
+        appendMessage('system', 'Servidores do Gemini temporariamente indisponíveis devido à alta demanda global. Tente novamente em instantes.');
       }
     }
   </script>
