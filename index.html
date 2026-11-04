@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI Embed</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        gemini: {
+                            bg: '#0f1015',
+                            card: '#1a1c23',
+                            border: '#2a2d3d',
+                            accent: '#4f46e5',
+                            accentHover: '#4338ca',
+                            gradientStart: '#7c3aed',
+                            gradientEnd: '#2563eb'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for embedded iframe environment */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f1015;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2d3d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b3f54;
+        }
+    </style>
+</head>
+<body class="bg-gemini-bg text-gray-100 font-sans h-full flex flex-col justify-between overflow-hidden antialiased">
+
+    <!-- Header Section -->
+    <header class="bg-gemini-card/80 backdrop-blur border-b border-gemini-border px-4 py-3 flex items-center justify-between z-10 shrink-0">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-gemini-gradientStart to-gemini-gradientEnd flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <i class="fa-solid font-bold text-white text-sm">✦</i>
+            </div>
+            <div>
+                <h1 class="font-semibold text-sm tracking-wide bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Gemini AI Demo</h1>
+                <p class="text-[10px] text-gray-400">Modelo: gemini-3-flash-preview</p>
+            </div>
+        </div>
+
+        <!-- Controls / Actions -->
+        <div class="flex items-center space-x-2">
+            <!-- Key Modal Trigger Button -->
+            <button id="toggleKeyBtn" title="Configurar API Key" class="text-xs px-2.5 py-1.5 rounded-lg bg-gemini-border hover:bg-gray-700 text-gray-300 flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-key text-amber-400 text-xs"></i>
+                <span id="keyStatusText" class="hidden sm:inline">API Key</span>
+            </button>
+            
+            <!-- Clear Chat Button -->
+            <button id="clearBtn" title="Limpar conversa" class="text-xs px-2.5 py-1.5 rounded-lg bg-gemini-border hover:bg-red-900/40 hover:text-red-300 text-gray-300 flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- API Key Input Bar (Collapsible) -->
+    <div id="keySection" class="bg-gemini-card border-b border-gemini-border px-4 py-3 transition-all duration-300 hidden">
+        <div class="max-w-2xl mx-auto flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+                <label for="apiKeyInput" class="text-xs font-medium text-gray-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock text-purple-400"></i> Google AI Studio API Key
+                </label>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-purple-400 hover:underline flex items-center gap-1">
+                    Obter Chave Grátis <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                </a>
+            </div>
+            <div class="flex gap-2">
+                <input type="password" id="apiKeyInput" placeholder="Cole sua chave (AIzaSy...)" class="flex-1 bg-gemini-bg border border-gemini-border rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition">
+                <button id="saveKeyBtn" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition">
+                    Salvar
+                </button>
+            </div>
+            <p class="text-[10px] text-gray-400">A chave é mantida apenas na sessão local do seu navegador para fins de apresentação.</p>
+        </div>
+    </div>
+
+    <!-- Messages Container -->
+    <main id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4 max-w-4xl w-full mx-auto">
+        <!-- Welcome Screen -->
+        <div id="welcomeMessage" class="h-full flex flex-col items-center justify-center text-center p-6 space-y-4 my-auto">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-blue-600 flex items-center justify-center text-3xl shadow-xl shadow-purple-500/10">
+                ✦
+            </div>
+            <h2 class="text-xl font-bold text-white">Demonstração ao Vivo do Gemini</h2>
+            <p class="text-xs text-gray-400 max-w-xs">
+                Insira sua chave de API e faça perguntas em tempo real durante o seu slide no Canva.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md pt-2 text-left">
+                <button onclick="sendQuickPrompt('Resuma as principais vantagens do Gemini AI em 3 pontos.')" class="p-2.5 bg-gemini-card hover:bg-gemini-border border border-gemini-border rounded-xl text-xs text-gray-300 transition text-left">
+                    💡 "Resuma as vantagens do Gemini..."
+                </button>
+                <button onclick="sendQuickPrompt('Crie uma frase curta de impacto para uma apresentação sobre Inteligência Artificial.')" class="p-2.5 bg-gemini-card hover:bg-gemini-border border border-gemini-border rounded-xl text-xs text-gray-300 transition text-left">
+                    🚀 "Frase de impacto sobre IA..."
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Error Alert Toast -->
+    <div id="errorToast" class="fixed top-14 left-1/2 -translate-x-1/2 bg-red-900/90 border border-red-500 text-red-200 text-xs px-4 py-2.5 rounded-xl shadow-2xl backdrop-blur flex items-center gap-2 hidden transition-all duration-300 z-50 max-w-md">
+        <i class="fa-solid fa-circle-exclamation text-red-400"></i>
+        <span id="errorMessage">Ocorreu um erro ao processar.</span>
+        <button onclick="hideError()" class="ml-auto text-red-300 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Input Footer -->
+    <footer class="bg-gemini-card/60 backdrop-blur border-t border-gemini-border p-3 shrink-0">
+        <form id="chatForm" class="max-w-4xl mx-auto flex items-center gap-2">
+            <div class="relative flex-1">
+                <textarea id="promptInput" rows="1" placeholder="Digite sua pergunta..." class="w-full bg-gemini-bg border border-gemini-border rounded-xl px-4 py-2.5 pr-10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 resize-none transition max-h-24"></textarea>
+            </div>
+            <button type="submit" id="sendBtn" class="bg-gradient-to-r from-gemini-gradientStart to-gemini-gradientEnd hover:opacity-90 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-lg transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+        </form>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // DOM Elements
+        const chatContainer = document.getElementById('chatContainer');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const chatForm = document.getElementById('chatForm');
+        const promptInput = document.getElementById('promptInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const toggleKeyBtn = document.getElementById('toggleKeyBtn');
+        const keySection = document.getElementById('keySection');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveKeyBtn = document.getElementById('saveKeyBtn');
+        const errorToast = document.getElementById('errorToast');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // State Management
+        let userApiKey = localStorage.getItem('gemini_api_key') || '';
+
+        // Initialize state
+        if (userApiKey) {
+            apiKeyInput.value = userApiKey;
+            updateKeyStatus(true);
+        } else {
+            keySection.classList.remove('hidden');
+        }
+
+        // Toggle Key Drawer
+        toggleKeyBtn.addEventListener('click', () => {
+            keySection.classList.toggle('hidden');
+        });
+
+        // Save Key
+        saveKeyBtn.addEventListener('click', () => {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                userApiKey = key;
+                localStorage.setItem('gemini_api_key', key);
+                updateKeyStatus(true);
+                keySection.classList.add('hidden');
+                showError('Chave API salva com sucesso!', false);
+            } else {
+                userApiKey = '';
+                localStorage.removeItem('gemini_api_key');
+                updateKeyStatus(false);
+            }
+        });
+
+        function updateKeyStatus(hasKey) {
+            if (hasKey) {
+                toggleKeyBtn.classList.remove('bg-gemini-border');
+                toggleKeyBtn.classList.add('bg-emerald-950/50', 'border', 'border-emerald-500/40');
+            } else {
+                toggleKeyBtn.classList.add('bg-gemini-border');
+                toggleKeyBtn.classList.remove('bg-emerald-950/50', 'border', 'border-emerald-500/40');
+            }
+        }
+
+        // Auto-expand textarea
+        promptInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Enter key to submit (Shift+Enter for newline)
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Handle Form Submit
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = promptInput.value.trim();
+            if (!text) return;
+
+            if (!userApiKey) {
+                showError('Insira sua API Key do Gemini antes de enviar.');
+                keySection.classList.remove('hidden');
+                return;
+            }
+
+            hideError();
+            if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+            // Render User Message
+            appendMessage('user', text);
+            promptInput.value = '';
+            promptInput.style.height = 'auto';
+
+            // Loading Indicator
+            const loadingId = appendLoadingBubble();
+            sendBtn.disabled = true;
+
+            try {
+                const response = await fetchGeminiAPI(text);
+                removeBubble(loadingId);
+                appendMessage('model', response);
+            } catch (err) {
+                removeBubble(loadingId);
+                showError(err.message || 'Erro de comunicação com o Gemini.');
+            } finally {
+                sendBtn.disabled = false;
+                scrollToBottom();
+            }
+        });
+
+        // Quick prompts
+        window.sendQuickPrompt = function(promptText) {
+            promptInput.value = promptText;
+            chatForm.dispatchEvent(new Event('submit'));
+        };
+
+        // Clear Chat
+        clearBtn.addEventListener('click', () => {
+            chatContainer.innerHTML = '';
+            chatContainer.appendChild(welcomeMessage);
+            welcomeMessage.style.display = 'flex';
+            hideError();
+        });
+
+        // Append User or Model Message
+        function appendMessage(role, content) {
+            const isUser = role === 'user';
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`;
+
+            const bubble = document.createElement('div');
+            bubble.className = `max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${
+                isUser 
+                ? 'bg-gradient-to-r from-gemini-gradientStart to-gemini-gradientEnd text-white rounded-br-none shadow-md' 
+                : 'bg-gemini-card border border-gemini-border text-gray-200 rounded-bl-none shadow-sm'
+            }`;
+
+            // Add avatar icon for Gemini
+            if (!isUser) {
+                const header = document.createElement('div');
+                header.className = 'flex items-center gap-1.5 mb-1.5 text-[10px] font-semibold text-purple-400';
+                header.innerHTML = `<span>✦ Gemini</span>`;
+                bubble.appendChild(header);
+            }
+
+            const textNode = document.createElement('div');
+            textNode.className = 'whitespace-pre-wrap break-words';
+            textNode.textContent = content;
+            bubble.appendChild(textNode);
+
+            wrapper.appendChild(bubble);
+            chatContainer.appendChild(wrapper);
+            scrollToBottom();
+        }
+
+        // Loading Bubble Animation
+        function appendLoadingBubble() {
+            const id = 'loading-' + Date.now();
+            const wrapper = document.createElement('div');
+            wrapper.id = id;
+            wrapper.className = 'flex justify-start';
+
+            wrapper.innerHTML = `
+                <div class="bg-gemini-card border border-gemini-border rounded-2xl rounded-bl-none px-4 py-3 text-xs flex items-center space-x-2">
+                    <span class="text-[10px] text-purple-400 font-semibold">✦ Gemini está pensando...</span>
+                    <div class="flex space-x-1">
+                        <div class="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(wrapper);
+            scrollToBottom();
+            return id;
+        }
+
+        function removeBubble(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Error Handlers
+        function showError(msg, isError = true) {
+            errorMessage.textContent = msg;
+            errorToast.classList.remove('hidden');
+            if (!isError) {
+                errorToast.classList.remove('bg-red-900/90', 'border-red-500', 'text-red-200');
+                errorToast.classList.add('bg-emerald-900/90', 'border-emerald-500', 'text-emerald-200');
+            } else {
+                errorToast.classList.add('bg-red-900/90', 'border-red-500', 'text-red-200');
+                errorToast.classList.remove('bg-emerald-900/90', 'border-emerald-500', 'text-emerald-200');
+            }
+            setTimeout(hideError, 5000);
+        }
+
+        function hideError() {
+            errorToast.classList.add('hidden');
+        }
+
+        // Fetch API Function for Gemini
+        async function fetchGeminiAPI(prompt) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${userApiKey}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `Erro ${response.status}: Falha ao consultar Gemini.`);
+            }
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (!text) {
+                throw new Error('A API retornou uma resposta sem conteúdo de texto.');
+            }
+
+            return text;
+        }
+    </script>
+</body>
+</html>
