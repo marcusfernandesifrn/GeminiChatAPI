@@ -49,7 +49,7 @@
       </div>
       <div>
         <h1 class="font-bold text-base tracking-wide leading-none text-white">Gemini Live Demo</h1>
-        <p class="text-xs text-gray-400 mt-1">Multi-model Fallback: <span class="text-geminiBlue font-mono">Auto (3.8 / 2.0 / 1.5)</span></p>
+        <p class="text-xs text-gray-400 mt-1">Modelo ativo: <span class="text-geminiBlue font-mono">gemini-3.8-flash</span></p>
       </div>
     </div>
 
@@ -240,11 +240,10 @@
 
       const loadingId = appendLoading();
 
-      // Lista de modelos em ordem de prioridade para Fallback automático
+      // Apenas os modelos ativos suportados na v1beta
       const models = [
         'gemini-3.8-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash'
+        'gemini-3.5-flash-lite'
       ];
 
       let success = false;
@@ -265,9 +264,9 @@
 
           const data = await response.json();
 
-          // Se o servidor retornar 503 (alta demanda) ou 429 (limite de requisições), tenta o próximo modelo
+          // Se for erro de sobrecarga/cota temporária (503 ou 429), tenta o modelo de backup ativo
           if (response.status === 503 || response.status === 429 || (data.error && (data.error.code === 503 || data.error.code === 429))) {
-            console.warn(`Modelo ${model} indisponível (Erro ${response.status}). Alternando para o próximo modelo...`);
+            console.warn(`Modelo ${model} temporariamente indisponível. Alternando modelo...`);
             continue;
           }
 
@@ -283,17 +282,16 @@
           }
 
           success = true;
-          break; // Sucesso, sai do loop de fallback
+          break; // Concluído com sucesso
 
         } catch (err) {
           console.error(`Falha de conexão com o modelo ${model}:`, err);
         }
       }
 
-      // Caso todos os modelos da lista falhem
       if (!success) {
         removeLoading(loadingId);
-        appendMessage('system', 'Servidores do Gemini temporariamente indisponíveis devido à alta demanda global. Tente novamente em instantes.');
+        appendMessage('system', 'Servidores do Gemini indisponíveis ou com alta demanda temporária. Tente novamente em alguns segundos.');
       }
     }
   </script>
